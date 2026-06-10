@@ -1,0 +1,7 @@
+target/
+.git/
+.idea/
+*.iml
+.cursor/
+compose.yaml
+README.md

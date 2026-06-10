@@ -362,6 +362,94 @@ mvn test
 
 ---
 
+## Deployment (Render)
+
+This is a **Java / Maven** application — not Node.js. On Render, use **Docker** or the **Java** runtime. The app also requires a **managed Redis** instance (Render does not bundle Redis with web services).
+
+### Step 1 — Push code to GitHub
+
+```bash
+git add .
+git commit -m "Add deployment configuration"
+git push origin master
+```
+
+### Step 2 — Create a managed Redis database
+
+Use a free cloud Redis provider and note the connection details:
+
+| Provider | Notes |
+|---|---|
+| [Upstash](https://upstash.com/) | Free tier, TLS supported — set `REDIS_SSL=true` |
+| [Redis Cloud](https://redis.io/cloud/) | Free tier available |
+| Any Redis 6+ host | Must be reachable from Render |
+
+### Step 3 — Deploy on Render
+
+#### Option A — Docker (recommended)
+
+| Setting | Value |
+|---|---|
+| **Language** | `Docker` |
+| **Branch** | `master` |
+| **Root Directory** | *(leave empty)* |
+| **Dockerfile Path** | `./Dockerfile` |
+| **Instance Type** | Free |
+
+Or use the included blueprint — in Render Dashboard: **New → Blueprint** and point to `render.yaml`.
+
+#### Option B — Native Java
+
+| Setting | Value |
+|---|---|
+| **Language** | `Java` |
+| **Branch** | `master` |
+| **Root Directory** | *(leave empty)* |
+| **Build Command** | `mvn clean package -DskipTests` |
+| **Start Command** | `java -jar target/redis-url-shortener-1.0.0-SNAPSHOT.war` |
+| **Instance Type** | Free |
+
+> Do **not** use `yarn` or `yarn start` — those are for Node.js projects.
+
+### Step 4 — Environment variables
+
+Set these in **Render → your service → Environment**:
+
+| Variable | Example | Required |
+|---|---|---|
+| `APP_BASE_URL` | `https://microurl.onrender.com` | Yes — your public Render URL |
+| `REDIS_HOST` | `your-redis.upstash.io` | Yes |
+| `REDIS_PORT` | `6379` | Yes |
+| `REDIS_PASSWORD` | `your-redis-password` | If your Redis requires auth |
+| `REDIS_SSL` | `true` | Set to `true` for Upstash / TLS Redis |
+
+Render injects `PORT` automatically — the app reads it via `server.port=${PORT:8081}`.
+
+### Step 5 — Verify deployment
+
+```bash
+# Health check
+curl -s -o /dev/null -w "%{http_code}\n" https://YOUR-SERVICE.onrender.com/
+
+# Create a short URL
+curl -s -X POST https://YOUR-SERVICE.onrender.com/api/urls \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://redis.io/docs/latest/"}'
+```
+
+### Docker (local production test)
+
+```bash
+docker build -t microurl .
+docker run -p 8081:8081 \
+  -e REDIS_HOST=host.docker.internal \
+  -e REDIS_PORT=6382 \
+  -e APP_BASE_URL=http://localhost:8081 \
+  microurl
+```
+
+---
+
 ## Troubleshooting
 
 | Problem | Likely cause | Fix |
@@ -371,6 +459,9 @@ mvn test
 | `Could not connect to Redis` | Redis container not running | Run `docker compose up -d` and verify with `redis-cli ping` |
 | `release version 17 not supported` | Maven using old Java | Set `JAVA_HOME` to Java 17+ |
 | Duplicate URL still creates new code | App not restarted after update | Restart the app; the fallback scan handles legacy entries automatically |
+| Render build fails with `yarn` | Wrong language selected | Switch runtime to **Docker** or **Java**, not Node |
+| Render app crashes on start | Redis not reachable | Verify `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, and `REDIS_SSL` |
+| Short URLs show `localhost` | `APP_BASE_URL` not set | Set `APP_BASE_URL` to your public Render URL |
 
 ---
 
