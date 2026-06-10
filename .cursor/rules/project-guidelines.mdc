@@ -1,0 +1,28 @@
+---
+description: Redis URL Shortener project architecture and coding rules
+globs:
+alwaysApply: true
+---
+
+This is a Java Spring Boot MVC application.
+
+Architecture rules:
+- Use Java and Maven.
+- Use WAR packaging because the project uses JSP.
+- Use Spring MVC, JSP, and JSTL.
+- Keep JSP files under src/main/webapp/WEB-INF/views/.
+- Use Spring Data Redis and StringRedisTemplate.
+- Use constructor injection only.
+- Do not use field injection.
+- Keep controllers thin.
+- Put business logic in services.
+- Put request and response contracts in DTOs.
+- Validate all external input.
+- Accept only http and https URLs.
+- Do not store IP addresses or sensitive visitor data.
+- Do not add a relational database unless explicitly requested.
+- Do not add authentication unless explicitly requested.
+- Do not add Lombok unless explicitly requested.
+- Add or update tests when behavior changes.
+- Update README.md when setup commands change.
+- Run mvn test after modifying backend logic.
