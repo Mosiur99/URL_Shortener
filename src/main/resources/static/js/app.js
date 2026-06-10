@@ -38,8 +38,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            lastShortUrl = data.shortUrl;
             lastCode = data.code;
+            lastShortUrl = window.location.origin + '/' + data.code;
 
             const resultTitle = result.querySelector('.result-header h2');
             if (response.status === 200) {
@@ -49,8 +49,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             resultCode.textContent = data.code;
-            resultShortUrl.textContent = data.shortUrl;
-            resultShortUrl.href = data.shortUrl;
+            resultShortUrl.textContent = lastShortUrl;
+            resultShortUrl.href = lastShortUrl;
             resultOriginalUrl.textContent = data.originalUrl;
             analyticsLink.href = '/analytics/' + data.code;
             result.classList.remove('hidden');

@@ -57,13 +57,17 @@ public class UrlShortenerService {
     }
 
     public CreateShortUrlResult createShortUrl(String originalUrl) {
+        return createShortUrl(originalUrl, baseUrl);
+    }
+
+    public CreateShortUrlResult createShortUrl(String originalUrl, String publicBaseUrl) {
         urlValidator.validate(originalUrl);
         String trimmedUrl = originalUrl.trim();
 
         String existingCode = findExistingCode(trimmedUrl);
         if (existingCode != null) {
             return new CreateShortUrlResult(
-                    new CreateShortUrlResponse(existingCode, trimmedUrl, buildShortUrl(existingCode)),
+                    new CreateShortUrlResponse(existingCode, trimmedUrl, buildShortUrl(existingCode, publicBaseUrl)),
                     false
             );
         }
@@ -78,7 +82,7 @@ public class UrlShortenerService {
         redisTemplate.opsForSet().add(INDEX_KEY, code);
 
         return new CreateShortUrlResult(
-                new CreateShortUrlResponse(code, trimmedUrl, buildShortUrl(code)),
+                new CreateShortUrlResponse(code, trimmedUrl, buildShortUrl(code, publicBaseUrl)),
                 true
         );
     }
@@ -103,14 +107,22 @@ public class UrlShortenerService {
     }
 
     public UrlAnalyticsResponse getAnalytics(String code) {
+        return getAnalytics(code, baseUrl);
+    }
+
+    public UrlAnalyticsResponse getAnalytics(String code, String publicBaseUrl) {
         String originalUrl = redisTemplate.opsForValue().get(urlKey(code));
         if (originalUrl == null) {
             throw new ShortUrlNotFoundException(code);
         }
-        return buildAnalyticsResponse(code, originalUrl);
+        return buildAnalyticsResponse(code, originalUrl, publicBaseUrl);
     }
 
     public List<UrlAnalyticsResponse> getAllAnalytics() {
+        return getAllAnalytics(baseUrl);
+    }
+
+    public List<UrlAnalyticsResponse> getAllAnalytics(String publicBaseUrl) {
         Set<String> codes = discoverCodesFromUrlKeys();
         Map<String, UrlAnalyticsResponse> canonicalByUrl = new HashMap<>();
 
@@ -120,7 +132,7 @@ public class UrlShortenerService {
                 continue;
             }
 
-            UrlAnalyticsResponse current = buildAnalyticsResponse(code, originalUrl);
+            UrlAnalyticsResponse current = buildAnalyticsResponse(code, originalUrl, publicBaseUrl);
             UrlAnalyticsResponse existing = canonicalByUrl.get(originalUrl);
             if (existing == null || isEarlier(current.getCreatedAt(), existing.getCreatedAt())) {
                 canonicalByUrl.put(originalUrl, current);
@@ -152,7 +164,7 @@ public class UrlShortenerService {
         redisTemplate.opsForSet().remove(INDEX_KEY, code);
     }
 
-    private UrlAnalyticsResponse buildAnalyticsResponse(String code, String originalUrl) {
+    private UrlAnalyticsResponse buildAnalyticsResponse(String code, String originalUrl, String publicBaseUrl) {
         Map<Object, Object> metadata = redisTemplate.opsForHash().entries(metadataKey(code));
         Map<Object, Object> analytics = redisTemplate.opsForHash().entries(analyticsKey(code));
         Map<Object, Object> daily = redisTemplate.opsForHash().entries(dailyKey(code));
@@ -168,7 +180,7 @@ public class UrlShortenerService {
         return new UrlAnalyticsResponse(
                 code,
                 originalUrl,
-                buildShortUrl(code),
+                buildShortUrl(code, publicBaseUrl),
                 createdAt,
                 totalClicks,
                 dailyClicks
@@ -261,8 +273,10 @@ public class UrlShortenerService {
         return code;
     }
 
-    private String buildShortUrl(String code) {
-        String normalizedBase = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    private String buildShortUrl(String code, String publicBaseUrl) {
+        String normalizedBase = publicBaseUrl.endsWith("/")
+                ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1)
+                : publicBaseUrl;
         return normalizedBase + "/" + code;
     }
 
