@@ -1,5 +1,8 @@
 package com.example.urlshortener.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -15,6 +18,8 @@ import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ShortUrlNotFoundException.class)
     public Object handleNotFound(ShortUrlNotFoundException ex, HttpServletRequest request) {
@@ -42,9 +47,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<Map<String, String>> handleRedis(DataAccessException ex, HttpServletRequest request) {
+        log.error("Redis error on {} {}", request.getMethod(), request.getRequestURI(), ex);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("error", "Unable to connect to Redis. Check REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, and REDIS_SSL."));
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Object handleGeneric(Exception ex, HttpServletRequest request) {
+        log.error("Unhandled error on {} {}", request.getMethod(), request.getRequestURI(), ex);
         if (isApiRequest(request)) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An unexpected error occurred"));

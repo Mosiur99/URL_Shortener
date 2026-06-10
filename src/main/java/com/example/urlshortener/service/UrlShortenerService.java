@@ -7,6 +7,8 @@ import com.example.urlshortener.exception.ShortUrlNotFoundException;
 import com.example.urlshortener.util.ShortCodeGenerator;
 import com.example.urlshortener.util.UrlValidator;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -20,10 +22,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class UrlShortenerService {
@@ -180,18 +184,8 @@ public class UrlShortenerService {
         String oldestCode = null;
         String oldestCreatedAt = null;
 
-        Set<String> keys = redisTemplate.keys(URL_KEY_PREFIX + "*");
-        if (keys == null) {
-            return null;
-        }
-
-        for (String key : keys) {
-            String code = key.substring(URL_KEY_PREFIX.length());
-            if (!code.matches("[A-Za-z0-9]{7}")) {
-                continue;
-            }
-
-            String storedUrl = redisTemplate.opsForValue().get(key);
+        for (String code : discoverCodes()) {
+            String storedUrl = redisTemplate.opsForValue().get(urlKey(code));
             if (!trimmedUrl.equals(storedUrl)) {
                 continue;
             }
@@ -225,14 +219,38 @@ public class UrlShortenerService {
     }
 
     private Set<String> discoverCodesFromUrlKeys() {
-        Set<String> keys = redisTemplate.keys(URL_KEY_PREFIX + "*");
-        if (keys == null || keys.isEmpty()) {
-            return Set.of();
+        return discoverCodes();
+    }
+
+    private Set<String> discoverCodes() {
+        Set<String> codes = new HashSet<>();
+        Set<String> fromIndex = redisTemplate.opsForSet().members(INDEX_KEY);
+        if (fromIndex != null) {
+            fromIndex.stream()
+                    .filter(code -> code.matches("[A-Za-z0-9]{7}"))
+                    .forEach(codes::add);
         }
-        return keys.stream()
-                .map(key -> key.substring(URL_KEY_PREFIX.length()))
-                .filter(code -> code.matches("[A-Za-z0-9]{7}"))
-                .collect(java.util.stream.Collectors.toSet());
+        codes.addAll(scanUrlCodes());
+        return codes;
+    }
+
+    private Set<String> scanUrlCodes() {
+        Set<String> codes = new HashSet<>();
+        ScanOptions options = ScanOptions.scanOptions()
+                .match(URL_KEY_PREFIX + "*")
+                .count(100)
+                .build();
+
+        try (Cursor<String> cursor = redisTemplate.scan(options)) {
+            while (cursor.hasNext()) {
+                String key = cursor.next();
+                String code = key.substring(URL_KEY_PREFIX.length());
+                if (code.matches("[A-Za-z0-9]{7}")) {
+                    codes.add(code);
+                }
+            }
+        }
+        return codes;
     }
 
     private String generateUniqueCode() {
