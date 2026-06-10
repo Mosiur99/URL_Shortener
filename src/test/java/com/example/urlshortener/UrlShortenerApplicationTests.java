@@ -137,6 +137,21 @@ class UrlShortenerApplicationTests {
     }
 
     @Test
+    void redirectWorksWithTrailingSlash() throws Exception {
+        MvcResult createResult = mockMvc.perform(post("/api/urls")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"url\":\"https://example.com/trailing-slash\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String code = extractJsonValue(createResult.getResponse().getContentAsString(), "code");
+
+        mockMvc.perform(get("/" + code + "/"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "https://example.com/trailing-slash"));
+    }
+
+    @Test
     void redirectIncrementsAnalytics() throws Exception {
         MvcResult createResult = mockMvc.perform(post("/api/urls")
                         .contentType(MediaType.APPLICATION_JSON)
