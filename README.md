@@ -417,7 +417,7 @@ Set these in **Render → your service → Environment**:
 
 | Variable | Example | Required |
 |---|---|---|
-| `APP_BASE_URL` | `https://microurl.onrender.com` | Yes — your public Render URL |
+| `APP_BASE_URL` | `https://url-shortener.onrender.com` | Yes — **your real** Render URL from the dashboard (not a placeholder) |
 | `REDIS_HOST` | `turkey-jewel-argent-68220.db.redis.io` | Yes — from Redis Cloud **Public endpoint** |
 | `REDIS_PORT` | `14836` | Yes — port from **Public endpoint** |
 | `REDIS_PASSWORD` | *(from Redis Cloud Connect dialog)* | Yes |
@@ -431,14 +431,23 @@ Render injects `PORT` automatically — the app reads it via `server.port=${PORT
 
 ### Step 5 — Verify deployment
 
+Find your real URL in **Render → your service → top of page** (e.g. `https://url-shortener.onrender.com`).  
+Do **not** use placeholder text like `your-actual-app.onrender.com`.
+
 ```bash
-# Health check
-curl -s -o /dev/null -w "%{http_code}\n" https://YOUR-SERVICE.onrender.com/
+# Replace with YOUR real Render URL from the dashboard
+export RENDER_URL=https://url-shortener.onrender.com
+
+# Must return 200 (if you see "Not Found" + x-render-routing: no-server, the app is not running)
+curl -sI "$RENDER_URL/" | head -5
 
 # Create a short URL
-curl -s -X POST https://YOUR-SERVICE.onrender.com/api/urls \
+curl -s -X POST "$RENDER_URL/api/urls" \
   -H "Content-Type: application/json" \
   -d '{"url":"https://redis.io/docs/latest/"}'
+
+# Test redirect (use the code from the response above)
+curl -sI "$RENDER_URL/CODE_HERE"
 ```
 
 ### Docker (local production test)
