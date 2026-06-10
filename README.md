@@ -418,10 +418,14 @@ Set these in **Render → your service → Environment**:
 | Variable | Example | Required |
 |---|---|---|
 | `APP_BASE_URL` | `https://microurl.onrender.com` | Yes — your public Render URL |
-| `REDIS_HOST` | `your-redis.upstash.io` | Yes |
-| `REDIS_PORT` | `6379` | Yes |
-| `REDIS_PASSWORD` | `your-redis-password` | If your Redis requires auth |
-| `REDIS_SSL` | `true` | Set to `true` for Upstash / TLS Redis |
+| `REDIS_HOST` | `turkey-jewel-argent-68220.db.redis.io` | Yes — from Redis Cloud **Public endpoint** |
+| `REDIS_PORT` | `14836` | Yes — port from **Public endpoint** |
+| `REDIS_PASSWORD` | *(from Redis Cloud Connect dialog)* | Yes |
+| `REDIS_SSL` | `false` | `true` for Upstash; `false` for Redis Cloud public endpoint on port 14836 |
+
+**Redis Cloud:** Configuration → copy **Public endpoint** (`host:port`). Password → click **Connect** → copy from the connection string.
+
+**Local dev:** copy `.env.example` to `.env`, fill in values, then run `./run.sh`.
 
 Render injects `PORT` automatically — the app reads it via `server.port=${PORT:8081}`.
 
