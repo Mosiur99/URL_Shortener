@@ -4,6 +4,8 @@ A production-style micro URL shortener with real-time click analytics, built on 
 
 MicroURL turns long links into compact, shareable codes, tracks every redirect, and exposes analytics through both a modern web UI and a JSON API. Duplicate long URLs are detected automatically — the same link always resolves to the same short code.
 
+**Live demo:** [https://url-shortener-jp2d.onrender.com](https://url-shortener-jp2d.onrender.com/)
+
 ---
 
 ## Features
@@ -417,7 +419,7 @@ Set these in **Render → your service → Environment**:
 
 | Variable | Example | Required |
 |---|---|---|
-| `APP_BASE_URL` | `https://url-shortener.onrender.com` | Yes — **your real** Render URL from the dashboard (not a placeholder) |
+| `APP_BASE_URL` | `https://url-shortener-jp2d.onrender.com` | Yes — **your real** Render URL from the dashboard (not a placeholder) |
 | `REDIS_HOST` | `turkey-jewel-argent-68220.db.redis.io` | Yes — from Redis Cloud **Public endpoint** |
 | `REDIS_PORT` | `14836` | Yes — port from **Public endpoint** |
 | `REDIS_PASSWORD` | *(from Redis Cloud Connect dialog)* | Yes |
@@ -431,12 +433,10 @@ Render injects `PORT` automatically — the app reads it via `server.port=${PORT
 
 ### Step 5 — Verify deployment
 
-Find your real URL in **Render → your service → top of page** (e.g. `https://url-shortener.onrender.com`).  
-Do **not** use placeholder text like `your-actual-app.onrender.com`.
+**Live URL:** `https://url-shortener-jp2d.onrender.com`
 
 ```bash
-# Replace with YOUR real Render URL from the dashboard
-export RENDER_URL=https://url-shortener.onrender.com
+export RENDER_URL=https://url-shortener-jp2d.onrender.com
 
 # Must return 200 (if you see "Not Found" + x-render-routing: no-server, the app is not running)
 curl -sI "$RENDER_URL/" | head -5
